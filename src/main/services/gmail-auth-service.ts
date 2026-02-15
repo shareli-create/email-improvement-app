@@ -12,12 +12,9 @@ import { createServer } from 'http'
 class GmailAuthService {
   private oauth2Client: OAuth2Client | null = null
   private authWindow: BrowserWindow | null = null
+  private initialized = false
 
   // Google OAuth configuration
-  // Note: These should be set via environment variables in production
-  // For development, you can hardcode them or use a .env file loader
-  private readonly CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
-  private readonly CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
   private readonly REDIRECT_URI = 'http://localhost:3000/oauth2callback'
 
   // Gmail API scopes
@@ -29,25 +26,27 @@ class GmailAuthService {
     'https://www.googleapis.com/auth/userinfo.profile'
   ]
 
-  constructor() {
-    this.initializeOAuth()
-  }
-
   /**
-   * Initialize OAuth2 client
+   * Initialize OAuth2 client (lazy initialization)
    */
   private initializeOAuth(): void {
-    if (!this.CLIENT_ID || !this.CLIENT_SECRET) {
+    if (this.initialized) return
+
+    const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || ''
+    const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || ''
+
+    if (!CLIENT_ID || !CLIENT_SECRET) {
       log.warn('Google OAuth credentials not configured')
       return
     }
 
     this.oauth2Client = new google.auth.OAuth2(
-      this.CLIENT_ID,
-      this.CLIENT_SECRET,
+      CLIENT_ID,
+      CLIENT_SECRET,
       this.REDIRECT_URI
     )
 
+    this.initialized = true
     log.info('Google OAuth initialized')
   }
 
@@ -55,6 +54,8 @@ class GmailAuthService {
    * Initiate OAuth login flow
    */
   async login(): Promise<{ email: string; name: string }> {
+    this.initializeOAuth()
+
     if (!this.oauth2Client) {
       throw new Error('OAuth not initialized. Please configure Google credentials in .env')
     }
@@ -230,6 +231,8 @@ class GmailAuthService {
    * Get user info from Google
    */
   async getUserInfo(): Promise<{ email: string; name: string }> {
+    this.initializeOAuth()
+
     if (!this.oauth2Client) {
       throw new Error('OAuth not initialized')
     }
@@ -247,6 +250,8 @@ class GmailAuthService {
    * Get OAuth2 client (for Gmail API)
    */
   getAuthClient(): OAuth2Client {
+    this.initializeOAuth()
+
     if (!this.oauth2Client) {
       throw new Error('OAuth not initialized')
     }
@@ -276,6 +281,8 @@ class GmailAuthService {
    * Check if user is authenticated
    */
   async isAuthenticated(): Promise<boolean> {
+    this.initializeOAuth()
+
     if (!this.oauth2Client) return false
 
     try {
