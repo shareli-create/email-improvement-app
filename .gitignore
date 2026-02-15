@@ -1,0 +1,13 @@
+node_modules
+dist
+dist-electron
+.vite
+.env
+.env.local
+*.log
+*.db
+*.sqlite
+.DS_Store
+Thumbs.db
+out
+build
