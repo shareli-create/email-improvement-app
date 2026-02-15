@@ -5,32 +5,25 @@ import { gmailService } from '../services/gmail-service'
 import { cacheService } from '../services/cache-service'
 
 export function setupEmailHandlers(ipcMain: IpcMain): void {
-  // Fetch inbox
+  // Fetch inbox - always fetches fresh emails from Gmail
   ipcMain.handle('emails:fetch-inbox', async (_event, limit?: number) => {
     try {
       log.info(`Fetching inbox (limit: ${limit || 50})`)
 
-      // Try to get from cache first
-      const cachedEmails = cacheService.getCachedEmails(limit || 50, false)
-
-      if (cachedEmails.length > 0) {
-        log.info(`Returning ${cachedEmails.length} emails from cache`)
-        return cachedEmails
-      }
-
-      // Fetch from Gmail if cache is empty
+      // Always fetch fresh emails from Gmail
       const emails = await gmailService.getInboxMessages(limit || 50)
 
-      // Cache the results
+      // Update cache with fresh emails
       if (emails.length > 0) {
         cacheService.cacheEmails(emails)
+        log.info(`Fetched and cached ${emails.length} fresh emails from Gmail`)
       }
 
       return emails
     } catch (error: any) {
       log.error('Failed to fetch inbox:', error.message)
 
-      // Return cached emails on error
+      // Return cached emails on error as fallback
       const cachedEmails = cacheService.getCachedEmails(limit || 50, false)
       if (cachedEmails.length > 0) {
         log.info('Returning cached emails due to fetch error')
