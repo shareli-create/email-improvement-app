@@ -79,7 +79,7 @@ function App() {
             {/* AI Suggestions Panel */}
             {showAIPanel && (
               <div className="w-96">
-                <AISuggestionsPanel />
+                <AISuggestionsPanel emailId={selectedEmailId} />
               </div>
             )}
           </>

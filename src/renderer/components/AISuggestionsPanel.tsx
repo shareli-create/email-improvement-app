@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, Loader } from 'lucide-react'
+import { Sparkles, Loader, Mail } from 'lucide-react'
 
-export function AISuggestionsPanel() {
+interface AISuggestionsPanelProps {
+  emailId: string | null
+}
+
+export function AISuggestionsPanel({ emailId }: AISuggestionsPanelProps) {
+  const [email, setEmail] = useState<any>(null)
   const [draftText, setDraftText] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [aiResponse, setAiResponse] = useState('')
@@ -21,6 +26,39 @@ export function AISuggestionsPanel() {
       cleanup2()
     }
   }, [])
+
+  useEffect(() => {
+    if (!emailId) {
+      setEmail(null)
+      setAiResponse('')
+      return
+    }
+
+    const fetchEmail = async () => {
+      try {
+        const result = await window.electronAPI.emails.getEmail(emailId)
+        setEmail(result)
+      } catch (error) {
+        console.error('Failed to fetch email:', error)
+      }
+    }
+
+    fetchEmail()
+  }, [emailId])
+
+  const handleGenerateResponse = async (tone: string) => {
+    if (!emailId) return
+
+    setIsProcessing(true)
+    setAiResponse('')
+
+    try {
+      await window.electronAPI.ai.generateResponse(emailId, tone)
+    } catch (error: any) {
+      setAiResponse(`Error: ${error.message}`)
+      setIsProcessing(false)
+    }
+  }
 
   const handleImproveDraft = async () => {
     if (!draftText.trim()) return
@@ -68,6 +106,39 @@ export function AISuggestionsPanel() {
       </div>
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
+        {/* Email Response Generator */}
+        {email && (
+          <div className="card bg-slate-800/50">
+            <h3 className="font-semibold mb-2 text-blue-400">Generate Response</h3>
+            <p className="text-xs text-slate-400 mb-3">
+              Reply to: {email.subject}
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleGenerateResponse('formal')}
+                disabled={isProcessing}
+                className="btn btn-sm btn-secondary disabled:opacity-50"
+              >
+                Formal
+              </button>
+              <button
+                onClick={() => handleGenerateResponse('friendly')}
+                disabled={isProcessing}
+                className="btn btn-sm btn-secondary disabled:opacity-50"
+              >
+                Friendly
+              </button>
+              <button
+                onClick={() => handleGenerateResponse('quick')}
+                disabled={isProcessing}
+                className="btn btn-sm btn-secondary disabled:opacity-50"
+              >
+                Quick
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Draft Input */}
         <div>
           <label className="block text-sm font-medium mb-2">Your Draft</label>
@@ -117,6 +188,13 @@ export function AISuggestionsPanel() {
               AI Suggestion
             </h3>
             <div className="text-sm text-slate-300 whitespace-pre-wrap">{aiResponse}</div>
+          </div>
+        )}
+
+        {!email && !draftText && (
+          <div className="flex flex-col items-center justify-center text-slate-500 py-12">
+            <Mail size={48} className="mb-3 opacity-30" />
+            <p className="text-sm">Select an email or paste a draft to get AI assistance</p>
           </div>
         )}
       </div>
