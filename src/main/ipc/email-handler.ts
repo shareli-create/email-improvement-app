@@ -118,5 +118,27 @@ export function setupEmailHandlers(ipcMain: IpcMain): void {
     }
   })
 
+  // Send reply
+  ipcMain.handle('emails:send-reply', async (_event, emailId: string, body: string, subject: string) => {
+    try {
+      log.info(`Sending reply to email ${emailId}`)
+
+      // Get the original email to get sender info
+      const originalEmail = cacheService.getEmailById(emailId)
+      if (!originalEmail) {
+        throw new Error('Original email not found')
+      }
+
+      // Send the reply
+      await gmailService.sendReply(originalEmail, body, subject)
+
+      log.info('Reply sent successfully')
+      return { success: true }
+    } catch (error: any) {
+      log.error('Failed to send reply:', error.message)
+      throw error
+    }
+  })
+
   log.info('Email IPC handlers registered')
 }

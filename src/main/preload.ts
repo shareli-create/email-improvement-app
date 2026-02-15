@@ -20,7 +20,9 @@ const electronAPI: ElectronAPI = {
     fetchInbox: (limit?: number) => ipcRenderer.invoke('emails:fetch-inbox', limit),
     getEmail: (id: string) => ipcRenderer.invoke('emails:get', id),
     getDrafts: () => ipcRenderer.invoke('emails:get-drafts'),
-    sync: () => ipcRenderer.invoke('emails:sync')
+    sync: () => ipcRenderer.invoke('emails:sync'),
+    sendReply: (emailId: string, body: string, subject: string) =>
+      ipcRenderer.invoke('emails:send-reply', emailId, body, subject)
   },
 
   ai: {

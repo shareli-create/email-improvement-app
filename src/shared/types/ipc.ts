@@ -18,6 +18,7 @@ export interface ElectronAPI {
     getEmail: (id: string) => Promise<Email | null>
     getDrafts: () => Promise<Email[]>
     sync: () => Promise<void>
+    sendReply: (emailId: string, body: string, subject: string) => Promise<{ success: boolean }>
   }
 
   ai: {

@@ -144,6 +144,48 @@ class GmailService {
   }
 
   /**
+   * Send a reply to an email
+   */
+  async sendReply(originalEmail: Email, body: string, subject: string): Promise<void> {
+    try {
+      const gmail = this.getGmailClient()
+
+      // Get recipient (reply to sender)
+      const replyTo = originalEmail.from.email
+
+      // Ensure subject has "Re:" prefix if replying
+      const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`
+
+      const email = [
+        `To: ${replyTo}`,
+        `Subject: ${replySubject}`,
+        'Content-Type: text/html; charset=utf-8',
+        '',
+        body
+      ].join('\n')
+
+      const encodedEmail = Buffer.from(email)
+        .toString('base64')
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/, '')
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: {
+          raw: encodedEmail,
+          threadId: originalEmail.conversationId // Keep in same thread
+        }
+      })
+
+      log.info(`Reply sent to: ${replyTo}`)
+    } catch (error: any) {
+      log.error('Failed to send reply:', error.message)
+      throw error
+    }
+  }
+
+  /**
    * Create a draft
    */
   async createDraft(to: string[], subject: string, body: string): Promise<Email> {

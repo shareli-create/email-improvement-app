@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Sparkles, Loader, Mail } from 'lucide-react'
+import { Sparkles, Loader, Mail, Copy, Send } from 'lucide-react'
 
 interface AISuggestionsPanelProps {
   emailId: string | null
@@ -10,6 +10,8 @@ export function AISuggestionsPanel({ emailId }: AISuggestionsPanelProps) {
   const [draftText, setDraftText] = useState('')
   const [isProcessing, setIsProcessing] = useState(false)
   const [aiResponse, setAiResponse] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const [sendStatus, setSendStatus] = useState('')
 
   useEffect(() => {
     // Listen for streaming updates
@@ -93,6 +95,32 @@ export function AISuggestionsPanel({ emailId }: AISuggestionsPanelProps) {
       setAiResponse(`Error: ${error.message}`)
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const handleUseResponse = () => {
+    setDraftText(aiResponse)
+    setSendStatus('')
+  }
+
+  const handleSendEmail = async () => {
+    if (!email || !draftText.trim()) return
+
+    setIsSending(true)
+    setSendStatus('')
+
+    try {
+      await window.electronAPI.emails.sendReply(email.id, draftText, email.subject)
+      setSendStatus('Email sent successfully! ✓')
+      setTimeout(() => {
+        setDraftText('')
+        setAiResponse('')
+        setSendStatus('')
+      }, 2000)
+    } catch (error: any) {
+      setSendStatus(`Error: ${error.message}`)
+    } finally {
+      setIsSending(false)
     }
   }
 
@@ -187,7 +215,42 @@ export function AISuggestionsPanel({ emailId }: AISuggestionsPanelProps) {
               <Sparkles size={16} />
               AI Suggestion
             </h3>
-            <div className="text-sm text-slate-300 whitespace-pre-wrap">{aiResponse}</div>
+            <div className="text-sm text-slate-300 whitespace-pre-wrap mb-3">{aiResponse}</div>
+            <button
+              onClick={handleUseResponse}
+              className="btn btn-sm btn-primary flex items-center justify-center gap-2 w-full"
+            >
+              <Copy size={14} />
+              Use This Response
+            </button>
+          </div>
+        )}
+
+        {/* Send Email */}
+        {email && draftText.trim() && (
+          <div>
+            <button
+              onClick={handleSendEmail}
+              disabled={isSending}
+              className="btn btn-primary flex items-center justify-center gap-2 w-full disabled:opacity-50"
+            >
+              {isSending ? (
+                <>
+                  <Loader className="animate-spin" size={16} />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  Send Reply
+                </>
+              )}
+            </button>
+            {sendStatus && (
+              <p className={`text-sm mt-2 ${sendStatus.includes('Error') ? 'text-red-400' : 'text-green-400'}`}>
+                {sendStatus}
+              </p>
+            )}
           </div>
         )}
 
