@@ -1,16 +1,16 @@
+// CRITICAL: Load environment variables FIRST, before any other imports
+import dotenv from 'dotenv'
+dotenv.config()
+
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import log from 'electron-log'
-import dotenv from 'dotenv'
 import { setupAuthHandlers } from './ipc/auth-handler'
 import { setupEmailHandlers } from './ipc/email-handler'
 import { setupAIHandlers } from './ipc/ai-handler'
 import { setupSettingsHandlers } from './ipc/settings-handler'
 import { setupTemplateHandlers } from './ipc/template-handler'
 import { databaseSchema } from './database/schema'
-
-// Load environment variables from .env file
-dotenv.config()
 
 // Configure logging
 log.initialize()
