@@ -1,6 +1,7 @@
 import type { IpcMain, BrowserWindow } from 'electron'
 import log from 'electron-log'
 import { claudeService } from '../services/claude-service'
+import { cacheService } from '../services/cache-service'
 import type { ResponseTone } from '../../shared/types/ipc'
 
 export function setupAIHandlers(ipcMain: IpcMain, mainWindow: BrowserWindow): void {
@@ -20,9 +21,21 @@ export function setupAIHandlers(ipcMain: IpcMain, mainWindow: BrowserWindow): vo
   ipcMain.handle('ai:generate-response', async (_event, emailId: string, tone: ResponseTone) => {
     try {
       log.info(`Generating ${tone} response for email ${emailId}...`)
-      // TODO: Fetch email content by ID from cache
-      const emailContent = 'Placeholder email content' // Will be implemented with email service
-      await claudeService.generateResponse(emailContent, tone, mainWindow)
+
+      // Fetch the actual email content from cache
+      const email = cacheService.getEmailById(emailId)
+      if (!email) {
+        throw new Error('Email not found')
+      }
+
+      // Format the email content for context
+      const emailContext = `Subject: ${email.subject}
+From: ${email.from?.name || email.from?.email || 'Unknown'}
+Date: ${email.receivedDateTime ? new Date(email.receivedDateTime).toLocaleString() : 'Unknown'}
+
+${email.body || email.bodyPreview || 'No content available'}`
+
+      await claudeService.generateResponse(emailContext, tone, mainWindow)
       return { success: true }
     } catch (error: any) {
       log.error('Failed to generate response:', error.message)
